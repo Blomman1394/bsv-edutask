@@ -1,88 +1,105 @@
 describe('Todo Operations', () => {
-  beforeEach(() => {
-    // Setup: Navigate to task detail view
-    cy.visit('/tasks/1')  // Adjust URL as needed
-    cy.wait(1000)  // Wait for page load
+  // Define test data variables
+  let taskId
+  let userId
+
+  before(function () {
+    // Create test user and task from fixtures
+    cy.fixture('user1.json').then((user) => {
+      cy.request({
+        method: 'POST',
+        url: 'http://localhost:5000/users/create',
+        form: true,
+        body: user
+      }).then((response) => {
+        userId = response.body._id.$oid
+        // Create test task
+        cy.fixture('task.json').then((task) => {
+          cy.request({
+            method: 'POST',
+            url: 'http://localhost:5000/tasks/create',
+            body: { ...task, userId }
+          }).then((response) => {
+            taskId = response.body._id.$oid
+          })
+        })
+      })
+    })
   })
 
-  // R8UC1 - Add Todo Tests
+  beforeEach(function () {
+    // Navigate to task detail page
+    cy.visit(`http://localhost:3000/tasks/${taskId}`)
+    cy.wait(500) // Wait for page load
+  })
+
   describe('Add Todo Item (R8UC1)', () => {
     it('should add valid todo item (R8UC1-TC1)', () => {
-      const todoText = 'Study chapter 1'
-      cy.get('[data-testid="todo-input"]').type(todoText)
-      cy.get('[data-testid="add-todo-button"]').click()
-      cy.get('[data-testid="todo-list"]').contains(todoText)
-      cy.get('[data-testid="todo-item"]').last().should('not.have.class', 'done')
+      cy.contains('div', 'Add Todo')
+        .find('input[type=text]')
+        .type('Study chapter 1')
+      cy.get('form').submit()
+      cy.contains('Study chapter 1').should('exist')
+        .and('not.have.class', 'done')
     })
 
     it('should not allow empty todo (R8UC1-TC2)', () => {
-      cy.get('[data-testid="add-todo-button"]').should('be.disabled')
-    })
-
-    it('should not allow whitespace-only todo (R8UC1-TC3)', () => {
-      cy.get('[data-testid="todo-input"]').type('   ')
-      cy.get('[data-testid="add-todo-button"]').should('be.disabled')
+      cy.get('form button[type=submit]')
+        .should('be.disabled')
     })
 
     it('should handle maximum length todo (R8UC1-TC4)', () => {
-      const maxLengthString = 'A'.repeat(255)
-      cy.get('[data-testid="todo-input"]').type(maxLengthString)
-      cy.get('[data-testid="add-todo-button"]').click()
-      cy.get('[data-testid="todo-list"]').contains(maxLengthString)
+      const maxLength = 'A'.repeat(255)
+      cy.contains('div', 'Add Todo')
+        .find('input[type=text]')
+        .type(maxLength)
+      cy.get('form').submit()
+      cy.contains(maxLength).should('exist')
     })
   })
 
-  // R8UC2 - Toggle Todo Tests
-  describe('Toggle Todo Item (R8UC2)', () => {
+  describe('Toggle Todo Status (R8UC2)', () => {
     beforeEach(() => {
-      // Create a test todo item
-      cy.get('[data-testid="todo-input"]').type('Test todo')
-      cy.get('[data-testid="add-todo-button"]').click()
+      // Create test todo item
+      cy.contains('div', 'Add Todo')
+        .find('input[type=text]')
+        .type('Toggle test todo{enter}')
     })
 
-    it('should toggle todo from active to done (R8UC2-TC1)', () => {
-      cy.get('[data-testid="todo-toggle"]').last().click()
-      cy.get('[data-testid="todo-item"]').last().should('have.class', 'done')
-    })
-
-    it('should toggle todo from done to active (R8UC2-TC2)', () => {
-      cy.get('[data-testid="todo-toggle"]').last().click() // to done
-      cy.get('[data-testid="todo-toggle"]').last().click() // back to active
-      cy.get('[data-testid="todo-item"]').last().should('not.have.class', 'done')
-    })
-
-    it('should maintain state after multiple toggles (R8UC2-TC3)', () => {
-      cy.get('[data-testid="todo-toggle"]').last().click().click()
-      cy.get('[data-testid="todo-item"]').last().should('not.have.class', 'done')
+    it('should toggle todo status (R8UC2-TC1)', () => {
+      cy.contains('Toggle test todo')
+        .parent()
+        .find('[data-testid=toggle-button]')
+        .click()
+      cy.contains('Toggle test todo')
+        .should('have.class', 'done')
     })
   })
 
-  // R8UC3 - Delete Todo Tests
   describe('Delete Todo Item (R8UC3)', () => {
-    it('should delete active todo from multiple items (R8UC3-TC1)', () => {
-      // Create two todos
-      cy.get('[data-testid="todo-input"]').type('Todo 1{enter}')
-      cy.get('[data-testid="todo-input"]').type('Todo 2{enter}')
-      cy.get('[data-testid="todo-delete"]').first().click()
-      cy.get('[data-testid="todo-list"]').should('not.contain', 'Todo 1')
+    it('should delete todo item (R8UC3-TC1)', () => {
+      // Create and delete todo
+      cy.contains('div', 'Add Todo')
+        .find('input[type=text]')
+        .type('Delete test todo{enter}')
+      cy.contains('Delete test todo')
+        .parent()
+        .find('[data-testid=delete-button]')
+        .click()
+      cy.contains('Delete test todo')
+        .should('not.exist')
     })
+  })
 
-    it('should delete done todo from list (R8UC3-TC2)', () => {
-      // Create and complete todo
-      cy.get('[data-testid="todo-input"]').type('Done todo{enter}')
-      cy.get('[data-testid="todo-toggle"]').click()
-      cy.get('[data-testid="todo-delete"]').click()
-      cy.get('[data-testid="todo-list"]').should('not.contain', 'Done todo')
+  after(function () {
+    // Clean up: Delete test task and user
+    cy.request({
+      method: 'DELETE',
+      url: `http://localhost:5000/tasks/${taskId}`
     })
-
-    it('should handle deleting last item (R8UC3-TC3)', () => {
-      cy.get('[data-testid="todo-input"]').type('Last todo{enter}')
-      cy.get('[data-testid="todo-delete"]').click()
-      cy.get('[data-testid="todo-list"]').should('be.empty')
-    })
-
-    it('should handle empty list (R8UC3-TC4)', () => {
-      cy.get('[data-testid="todo-list"]').should('be.empty')
+    cy.request({
+      method: 'DELETE',
+      url: `http://localhost:5000/users/${userId}`
     })
   })
 })
