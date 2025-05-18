@@ -38,4 +38,4 @@ jobs:
         
     - name: Run tests
       run: |
-        python -m pytest --cov=src backend/tests/test_usercontroller.py -v
+        python3 -m pytest  -v  --cov=src
