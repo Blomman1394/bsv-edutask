@@ -38,4 +38,4 @@ jobs:
         
     - name: Run tests
       run: |
-        python -m pytest --cov=src tests/ -v
+        python -m pytest --cov=src -v

@@ -30,13 +30,16 @@ class UserController(Controller):
 
         try:
             users = self.dao.find({'email': email})
-            if not users:  # No users found
-                return None
-            if len(users) > 1:
+            if len(users) == 1:
+                return users[0]
+            if len (users) == 0:    
+                raise IndexError('Error: no user found with mail {}'.format(email))
+            else:
                 print(f'Error: more than one user found with mail {email}')
-            return users[0]
+                return users[0]
         except Exception as e:
             raise
+
 
     def update(self, id, data):
         try:
