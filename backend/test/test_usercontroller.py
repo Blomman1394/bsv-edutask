@@ -76,13 +76,15 @@ def test_multiple_users_prints_warning(user_controller, mock_dao, capsys):
     # Assert
     assert "Error: more than one user found with mail test@example.com" in captured.out
 
-def test_no_user_raises_value_error(user_controller, mock_dao):
+def test_no_user_returns_none(user_controller, mock_dao):
     # Arrange
     mock_dao.find.return_value = []
 
-    # Act & Assert
-    with pytest.raises(ValueError, match="User not found"):
-        user_controller.get_user_by_email("nonexistent@example.com")
+    # Act
+    result = user_controller.get_user_by_email("nonexistent@example.com")
+
+    # Assert
+    assert result is None
 
 def test_invalid_email_raises_value_error(user_controller):
     # Act & Assert
