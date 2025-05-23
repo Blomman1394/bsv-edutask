@@ -33,7 +33,7 @@ class UserController(Controller):
             if len(users) == 1:
                 return users[0]
             if len (users) == 0:    
-                raise IndexError('Error: no user found with mail {}'.format(email))
+                return None
             else:
                 print(f'Error: more than one user found with mail {email}')
                 return users[0]

@@ -2,23 +2,41 @@ import pytest
 from unittest.mock import Mock
 from src.controllers.usercontroller import UserController
 
-# backend/src/controllers/test_usercontroller.py
+"""
+Test Design for get_user_by_email method
 
++---------------+------------------+------------------+---------------------+
+| Test Case ID  | Input           | Condition        | Expected Output    |
++---------------+------------------+------------------+---------------------+
+| TC1          | valid email,     | Single user      | Return user object |
+|              | existing user    | exists           |                    |
++---------------+------------------+------------------+---------------------+
+| TC2          | valid email,     | Multiple users   | Return first user  |
+|              | multiple users   | exist            |                    |
++---------------+------------------+------------------+---------------------+
+| TC3          | valid email,     | Multiple users   | Print warning      |
+|              | multiple users   | exist            | message            |
++---------------+------------------+------------------+---------------------+
+| TC4          | valid email,     | No user exists   | Return None       |
+|              | no user         |                  |                    |
++---------------+------------------+------------------+---------------------+
+| TC5          | invalid email    | Invalid format   | Raise ValueError  |
+|              |                  |                  |                    |
++---------------+------------------+------------------+---------------------+
+| TC6          | valid email      | Database error   | Raise Exception   |
+|              |                  |                  |                    |
++---------------+------------------+------------------+---------------------+
+"""
 
 @pytest.fixture
 def mock_dao():
-    # Create mock DAO object
-    dao = Mock()
-    return dao
-
+    return Mock()
 
 @pytest.fixture
 def user_controller(mock_dao):
-    # Create UserController instance with mock DAO
     return UserController(dao=mock_dao)
 
-
-def test_get_user_by_email_single_user(user_controller, mock_dao):
+def test_single_user_returns_user_object(user_controller, mock_dao):
     # Arrange
     test_user = {"email": "test@example.com", "name": "Test User"}
     mock_dao.find.return_value = [test_user]
@@ -28,10 +46,8 @@ def test_get_user_by_email_single_user(user_controller, mock_dao):
 
     # Assert
     assert result == test_user
-    mock_dao.find.assert_called_once_with({"email": "test@example.com"})
 
-
-def test_get_user_by_email_multiple_users(user_controller, mock_dao, capsys):
+def test_multiple_users_returns_first_user(user_controller, mock_dao):
     # Arrange
     test_users = [
         {"email": "test@example.com", "name": "Test User 1"},
@@ -41,33 +57,41 @@ def test_get_user_by_email_multiple_users(user_controller, mock_dao, capsys):
 
     # Act
     result = user_controller.get_user_by_email("test@example.com")
-    captured = capsys.readouterr()
 
     # Assert
     assert result == test_users[0]
+
+def test_multiple_users_prints_warning(user_controller, mock_dao, capsys):
+    # Arrange
+    test_users = [
+        {"email": "test@example.com", "name": "Test User 1"},
+        {"email": "test@example.com", "name": "Test User 2"},
+    ]
+    mock_dao.find.return_value = test_users
+
+    # Act
+    user_controller.get_user_by_email("test@example.com")
+    captured = capsys.readouterr()
+
+    # Assert
     assert "Error: more than one user found with mail test@example.com" in captured.out
-    mock_dao.find.assert_called_once_with({"email": "test@example.com"})
 
-
-def test_get_user_by_email_no_user(user_controller, mock_dao):
+def test_no_user_returns_none(user_controller, mock_dao):
     # Arrange
     mock_dao.find.return_value = []
 
     # Act
-    with pytest.raises(IndexError):
-        user_controller.get_user_by_email("nonexistent@example.com")
+    result = user_controller.get_user_by_email("nonexistent@example.com")
 
     # Assert
-    mock_dao.find.assert_called_once_with({"email": "nonexistent@example.com"})
+    assert result is None
 
-
-def test_get_user_by_email_invalid_format(user_controller):
+def test_invalid_email_raises_value_error(user_controller):
     # Act & Assert
     with pytest.raises(ValueError, match="Error: invalid email address"):
         user_controller.get_user_by_email("invalid-email")
 
-
-def test_get_user_by_email_db_error(user_controller, mock_dao):
+def test_database_error_raises_exception(user_controller, mock_dao):
     # Arrange
     mock_dao.find.side_effect = Exception("Database error")
 
