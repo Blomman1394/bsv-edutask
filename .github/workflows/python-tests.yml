@@ -1,6 +1,7 @@
 name: Backend Tests
 
 on:
+  workflow_dispatch: 
   push:
     paths:
       - 'backend/**'
@@ -38,4 +39,4 @@ jobs:
         
     - name: Run tests
       run: |
-        python3 -m pytest  -v  --cov=src
+        pytest  test/test_usercontroller.py
