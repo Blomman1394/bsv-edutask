@@ -3,11 +3,8 @@ name: Backend Tests
 on:
   workflow_dispatch: 
   push:
-    paths:
-      - 'backend/**'
   pull_request:
-    paths:
-      - 'backend/**'
+
 
 jobs:
   test:
