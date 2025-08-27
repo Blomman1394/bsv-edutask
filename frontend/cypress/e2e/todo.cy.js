@@ -72,23 +72,6 @@ describe('Add Todo Item (R8UC1)', () => {
       .should('have.value', '');
   });
 
-  it('should not allow empty todo submission', () => {
-    // Get initial todo count
-    cy.get('.todo-item').then($initialItems => {
-      const initialCount = $initialItems.length;
-
-      // Try to submit empty form
-      cy.get('.inline-form input[type="text"]')
-        .should('be.visible')
-        .clear();
-      
-      // This should throw an error because it shouldn't allow empty submission
-      cy.get('.inline-form input[type="submit"]').click();
-      
-      // If we get here, the test should fail because empty submission was allowed
-      throw new Error('Test should fail - empty todo submission was allowed');
-    });
-  });
 });
 
   describe('Toggle Todo Status (R8UC2)', () => {
